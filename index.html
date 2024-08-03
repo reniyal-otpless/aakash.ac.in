@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0" />
+		<title>ANTHE 2024 - Aakash National Talent Hunt Exam</title>
+		<link
+			rel="stylesheet"
+			type="text/css"
+			href="styles.css" />
+		<script
+			id="otpless-sdk"
+			type="text/javascript"
+			src="https://otpless.com/v2/headless.js"
+			data-appid="PASTE_YOUR_APP_ID_HERE"></script>
+	</head>
+	<body>
+		<section id="secOne">
+			<div class="register-anthe-wrapper">
+				<h4>Register Now</h4>
+				<span>Start preparing with Free Sample Test</span>
+			</div>
+			<form id="form">
+				<div
+					id="tc-auth"
+					class="tc-before">
+					<input
+						id="mobile-input"
+						type="tel"
+						maxlength="10"
+						minlength="10"
+						placeholder="Login With Truecaller -->" />
+				</div>
+
+				<input
+					id="otp-input"
+					placeholder="Enter OTP" />
+
+				<input
+					type="submit"
+					id="submit"
+					class="submit"
+					placeholder="Submit" />
+			</form>
+		</section>
+
+		<script type="text/javascript">
+			const callback = otplessUser => {
+				// Implement your custom logic here. to handle user data & redirect to next page
+				const mobileMap = otplessUser.identities.find(item => item.identityType === 'MOBILE')
+				const mobileNumber = mobileMap?.identityValue
+				const name = mobileMap?.name
+
+				console.log(otplessUser)
+				alert(`Hello ${name}, your mobile number is ${mobileNumber}`)
+
+				window.location = '/'
+			}
+
+			// Initialize OTPLESS SDK with the defined callback.
+			const OTPlessSignin = new OTPless(callback)
+
+			const phoneAuth = ({ phone, countryCode = '+91' }) => {
+				return OTPlessSignin.initiate({
+					channel: 'PHONE',
+					phone,
+					countryCode,
+				})
+			}
+
+			const oauth = provider => {
+				return OTPlessSignin.initiate({ channel: 'OAUTH', channelType: provider })
+			}
+
+			const verifyOTP = ({ otp, phone, countryCode = '+91' }) => {
+				return OTPlessSignin.verify({
+					channel: 'PHONE',
+					phone,
+					otp,
+					countryCode,
+				})
+			}
+
+			document.addEventListener('DOMContentLoaded', () => {
+				const phoneInput = document.getElementById('mobile-input')
+				const otpInput = document.getElementById('otp-input')
+				const tcAuthBtn = document.getElementById('tc-auth')
+				const form = document.getElementById('form')
+
+				let tc_unavailable = null
+
+				otpInput.style.display = 'none'
+				phoneInput.disabled = true
+
+				const handleTcAuthClick = () => {
+					return OTPlessSignin.initiate({ channel: 'OAUTH', channelType: 'TRUE_CALLER' }).then(res => {
+						console.log('success', res.response.deliveryChannel)
+						if (!res.response.deliveryChannel) {
+							tc_unavailable = true
+							phoneInput.disabled = false
+							phoneInput.placeholder = 'Enter Phone Number'
+							phoneInput.focus()
+
+							tcAuthBtn.classList.remove('tc-before')
+							tcAuthBtn.removeEventListener('click', handleTcAuthClick)
+						}
+					})
+				}
+
+				tcAuthBtn.addEventListener('click', handleTcAuthClick)
+
+				form.addEventListener('submit', e => {
+					e.preventDefault()
+
+					if (phoneInput.value.length === 10 && otpInput.value.length === 6) {
+						verifyOTP({ otp: otpInput.value, phone: phoneInput.value }).then(res => {
+							if (res.success) {
+								console.log('Phone Verified Successfully.')
+							} else console.error(res)
+						})
+					} else if (tc_unavailable) {
+						phoneAuth({ phone: phoneInput.value }).then(res => {
+							if (res.success) {
+								phoneInput.disabled = true
+								otpInput.style.display = 'block'
+							} else console.error(res)
+						})
+					}
+				})
+			})
+		</script>
+	</body>
+</html>
