@@ -121,9 +121,9 @@
 
 				if (isIOS() || isDesktop) {
 					tcNotFound()
+				} else{	
+					tcAuthBtn.addEventListener('click', handleTcAuthClick)
 				}
-
-				tcAuthBtn.addEventListener('click', handleTcAuthClick)
 
 				form.addEventListener('submit', e => {
 					e.preventDefault()
