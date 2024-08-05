@@ -26,39 +26,22 @@
 						type="tel"
 						maxlength="10"
 						minlength="10"
-						placeholder="Enter Phone Number" />
+						placeholder="Login With Truecaller -->" />
 				</div>
 
 				<input
 					id="otp-input"
-					placeholder="Enter OTP"
-					class="dsp-n" />
+					class="dsp-n"
+					placeholder="Enter OTP" />
 
 				<input
 					type="submit"
 					id="submit"
-					class="submit"
 					placeholder="Submit" />
 			</form>
 		</section>
 
 		<script type="text/javascript">
-			const phoneInput = document.getElementById('mobile-input')
-			const otpInput = document.getElementById('otp-input')
-			const tcAuthBtn = document.getElementById('tc-auth')
-			const form = document.getElementById('form')
-
-			let tc_unavailable = null
-
-			const isIOS = () => {
-				const userAgent = window.navigator.userAgent
-				const isIOS = ['iPad Simulator', 'iPhone Simulator', 'iPod Simulator', 'iPad', 'iPhone', 'iPod'].includes(navigator.platform) || userAgent.includes('Mac')
-
-				return isIOS
-			}
-
-			const isDesktop = window.screen.width > 768
-
 			const callback = otplessUser => {
 				// Implement your custom logic here. to handle user data & redirect to next page
 				const mobileMap = otplessUser.identities.find(item => item.identityType === 'MOBILE')
@@ -74,67 +57,92 @@
 			// Initialize OTPLESS SDK with the defined callback.
 			const OTPlessSignin = new OTPless(callback)
 
-			const phoneAuth = ({ phone, countryCode = '+91' }) =>
-				OTPlessSignin.initiate({
+			const phoneAuth = ({ phone, countryCode = '+91' }) => {
+				return OTPlessSignin.initiate({
 					channel: 'PHONE',
 					phone,
 					countryCode,
 				})
-
-			const oauth = channelType => {
-				return OTPlessSignin.initiate({ channel: 'OAUTH', channelType })
 			}
 
-			const verifyOTP = ({ otp, phone, countryCode = '+91' }) =>
-				OTPlessSignin.verify({
+			const oauth = provider => {
+				return OTPlessSignin.initiate({ channel: 'OAUTH', channelType: provider })
+			}
+
+			const verifyOTP = ({ otp, phone, countryCode = '+91' }) => {
+				return OTPlessSignin.verify({
 					channel: 'PHONE',
 					phone,
 					otp,
 					countryCode,
 				})
-
-			const handleTcAuthClick = () => {
-				return OTPlessSignin.initiate({ channel: 'OAUTH', channelType: 'TRUE_CALLER' }).then(res => {
-					console.log({ success: res.response.deliveryChannel })
-					if (!res.response.deliveryChannel) {
-						tc_unavailable = true
-						phoneInput.disabled = false
-						phoneInput.placeholder = 'Enter Phone Number'
-						phoneInput.focus()
-
-						tcAuthBtn.classList.remove('tc-before')
-						tcAuthBtn.removeEventListener('click', handleTcAuthClick)
-					}
-				})
 			}
 
-			const handleFormSubmit = e => {
-				e.preventDefault()
+			const isIOS = () => {
+				const userAgent = window.navigator.userAgent
+				const isIOS = ['iPad Simulator', 'iPhone Simulator', 'iPod Simulator', 'iPad', 'iPhone', 'iPod'].includes(navigator.platform) || userAgent.includes('Mac')
 
-				if (phoneInput.value.length === 10 && otpInput.value.length === 6) {
-					verifyOTP({ otp: otpInput.value, phone: phoneInput.value }).then(res => {
-						if (res.success) {
-							console.log('Phone Verified Successfully.')
-						} else console.error(res)
-					})
-				} else if (tc_unavailable) {
-					phoneAuth({ phone: phoneInput.value }).then(res => {
-						if (res.success) {
-							phoneInput.disabled = true
-							otpInput.style.display = 'block'
-						} else console.error(res)
-					})
-				}
+				return isIOS
 			}
+
+			const isDesktop = window.screen.width > 768
 
 			document.addEventListener('DOMContentLoaded', () => {
-				if (!isDesktop && !isIOS()) {
-					phoneInput.disabled = true
-					phoneInput.placeholder = 'Login With Truecaller'
-					tcAuthBtn.addEventListener('click', handleTcAuthClick)
+				const phoneInput = document.getElementById('mobile-input')
+				const otpInput = document.getElementById('otp-input')
+				const tcAuthBtn = document.getElementById('tc-auth')
+				const form = document.getElementById('form')
+				const submitBtn = document.getElementById('submit')
+
+				let tc_unavailable = null
+
+				phoneInput.disabled = true
+
+				const tcNotFound = () => {
+					tc_unavailable = true
+					phoneInput.disabled = false
+					phoneInput.placeholder = 'Enter Phone Number'
+					phoneInput.focus()
+
+					submitBtn.style.display = 'block'
+
+					tcAuthBtn.classList.remove('tc-before')
+					tcAuthBtn.removeEventListener('click', handleTcAuthClick)
 				}
 
-				form.addEventListener('submit', handleFormSubmit)
+				const handleTcAuthClick = () => {
+					return OTPlessSignin.initiate({ channel: 'OAUTH', channelType: 'TRUE_CALLER' }).then(res => {
+						console.log('success', res.response.deliveryChannel)
+						if (!res.response.deliveryChannel) {
+							tcNotFound()
+						}
+					})
+				}
+
+				if (isIOS() || isDesktop) {
+					tcNotFound()
+				}
+
+				tcAuthBtn.addEventListener('click', handleTcAuthClick)
+
+				form.addEventListener('submit', e => {
+					e.preventDefault()
+
+					if (phoneInput.value.length === 10 && otpInput.value.length === 6) {
+						verifyOTP({ otp: otpInput.value, phone: phoneInput.value }).then(res => {
+							if (res.success) {
+								console.log('Phone Verified Successfully.')
+							} else console.error(res)
+						})
+					} else if (tc_unavailable) {
+						phoneAuth({ phone: phoneInput.value }).then(res => {
+							if (res.success) {
+								phoneInput.disabled = true
+								otpInput.style.display = 'block'
+							} else console.error(res)
+						})
+					}
+				})
 			})
 		</script>
 	</body>
