@@ -114,3 +114,7 @@ input[type='submit']:hover {
 	z-index: 3; /* Higher than both the div and input */
 	background-color: transparent; /* Adjust if you want the div to be visible */
 }
+
+.dsp-n {
+	display: none;
+}

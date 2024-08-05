@@ -36,12 +36,12 @@
 
 				<input
 					id="otp-input"
+					class="dsp-n"
 					placeholder="Enter OTP" />
 
 				<input
 					type="submit"
 					id="submit"
-					class="submit"
 					placeholder="Submit" />
 			</form>
 		</section>
@@ -83,33 +83,52 @@
 				})
 			}
 
+			const isIOS = () => {
+				const userAgent = window.navigator.userAgent
+				const isIOS = ['iPad Simulator', 'iPhone Simulator', 'iPod Simulator', 'iPad', 'iPhone', 'iPod'].includes(navigator.platform) || userAgent.includes('Mac')
+
+				return isIOS
+			}
+
+			const isDesktop = window.screen.width > 768
+
 			document.addEventListener('DOMContentLoaded', () => {
 				const phoneInput = document.getElementById('mobile-input')
 				const otpInput = document.getElementById('otp-input')
 				const tcAuthBtn = document.getElementById('tc-auth')
 				const form = document.getElementById('form')
+				const submitBtn = document.getElementById('submit')
 
 				let tc_unavailable = null
 
-				otpInput.style.display = 'none'
 				phoneInput.disabled = true
+
+				const tcNotFound = () => {
+					tc_unavailable = true
+					phoneInput.disabled = false
+					phoneInput.placeholder = 'Enter Phone Number'
+					phoneInput.focus()
+
+					submitBtn.style.display = 'block'
+
+					tcAuthBtn.classList.remove('tc-before')
+					tcAuthBtn.removeEventListener('click', handleTcAuthClick)
+				}
 
 				const handleTcAuthClick = () => {
 					return OTPlessSignin.initiate({ channel: 'OAUTH', channelType: 'TRUE_CALLER' }).then(res => {
 						console.log('success', res.response.deliveryChannel)
 						if (!res.response.deliveryChannel) {
-							tc_unavailable = true
-							phoneInput.disabled = false
-							phoneInput.placeholder = 'Enter Phone Number'
-							phoneInput.focus()
-
-							tcAuthBtn.classList.remove('tc-before')
-							tcAuthBtn.removeEventListener('click', handleTcAuthClick)
+							tcNotFound()
 						}
 					})
 				}
 
-				tcAuthBtn.addEventListener('click', handleTcAuthClick)
+				if (isIOS() || isDesktop) {
+					tcNotFound()
+				} else {
+					tcAuthBtn.addEventListener('click', handleTcAuthClick)
+				}
 
 				form.addEventListener('submit', e => {
 					e.preventDefault()
